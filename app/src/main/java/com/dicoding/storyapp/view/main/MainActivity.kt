@@ -71,16 +71,18 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupAction() {
-        lifecycleScope.launch {
-            val adapter = StoryAdapter()
-            binding.rvStories.adapter = adapter.withLoadStateFooter(
-                footer = LoadingStateAdapter {
-                    adapter.retry()
-                }
-            )
+        viewModel.getSession().observe(this@MainActivity) {
+            lifecycleScope.launch {
+                val adapter = StoryAdapter()
+                binding.rvStories.adapter = adapter.withLoadStateFooter(
+                    footer = LoadingStateAdapter {
+                        adapter.retry()
+                    }
+                )
 
-            viewModel.quote.observe(this@MainActivity) {
-                adapter.submitData(lifecycle, it)
+                viewModel.getStories(it.token).observe(this@MainActivity) {
+                    adapter.submitData(lifecycle, it)
+                }
             }
         }
     }

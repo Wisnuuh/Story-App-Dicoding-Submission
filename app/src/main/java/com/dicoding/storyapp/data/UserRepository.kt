@@ -104,13 +104,13 @@ class UserRepository private constructor(
         }
     }
 
-    fun getStories(): LiveData<PagingData<ListStoryItem>> {
+    fun getStories(token: String): LiveData<PagingData<ListStoryItem>> {
         @OptIn(ExperimentalPagingApi::class)
         return Pager(
             config = PagingConfig(
                 pageSize = 5
             ),
-            remoteMediator = StoryRemoteMediator(quoteDatabase, apiService),
+            remoteMediator = StoryRemoteMediator(quoteDatabase, token),
             pagingSourceFactory = {
                 quoteDatabase.quoteDao().getAllQuote()
             }

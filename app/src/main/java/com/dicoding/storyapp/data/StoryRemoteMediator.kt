@@ -8,12 +8,12 @@ import androidx.room.withTransaction
 import com.dicoding.storyapp.data.database.RemoteKeys
 import com.dicoding.storyapp.data.database.StoryDatabase
 import com.dicoding.storyapp.data.response.ListStoryItem
-import com.dicoding.storyapp.data.retrofit.ApiService
+import com.dicoding.storyapp.data.retrofit.ApiConfig
 
 @OptIn(ExperimentalPagingApi::class)
 class StoryRemoteMediator(
     private val database: StoryDatabase,
-    private val apiService: ApiService
+    private val token: String
 ): RemoteMediator<Int, ListStoryItem>() {
 
     override suspend fun load(
@@ -39,7 +39,7 @@ class StoryRemoteMediator(
             }
         }
         try {
-            val responseData = apiService.getStoriesPaging(page, state.config.pageSize)
+            val responseData = ApiConfig.getApiService(token).getStoriesPaging(page, state.config.pageSize)
 
             val endOfPaginationReached = responseData.listStory.isEmpty()
 
