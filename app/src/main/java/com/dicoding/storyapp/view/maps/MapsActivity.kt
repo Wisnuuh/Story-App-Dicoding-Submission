@@ -4,6 +4,7 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.viewModels
+import androidx.lifecycle.lifecycleScope
 import com.dicoding.storyapp.R
 import com.dicoding.storyapp.data.response.Result
 import com.google.android.gms.maps.GoogleMap
@@ -15,6 +16,7 @@ import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.LatLngBounds
 import com.google.android.gms.maps.model.MarkerOptions
+import kotlinx.coroutines.launch
 
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
@@ -68,36 +70,40 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     private fun addManyMarker() {
-        viewModel.getLocations().observe(this@MapsActivity) { result ->
-            when (result) {
-                is Result.Success -> {
-                    result.data.forEach { data ->
-                        val latLng = LatLng(data.lat ?: 0.0, data.lon ?: 0.0)
-                        mMap.addMarker(
-                            MarkerOptions()
-                                .position(latLng)
-                                .title(data.name)
-                                .snippet(data.description)
-                        )
-                        boundsBuilder.include(latLng)
+        viewModel.getSession().observe(this@MapsActivity) {
+            lifecycleScope.launch {
+                viewModel.getLocations(it.token).observe(this@MapsActivity) { result ->
+                    when (result) {
+                        is Result.Success -> {
+                            result.data.forEach { data ->
+                                val latLng = LatLng(data.lat ?: 0.0, data.lon ?: 0.0)
+                                mMap.addMarker(
+                                    MarkerOptions()
+                                        .position(latLng)
+                                        .title(data.name)
+                                        .snippet(data.description)
+                                )
+                                boundsBuilder.include(latLng)
+                            }
+
+                            val bounds: LatLngBounds = boundsBuilder.build()
+                            mMap.animateCamera(
+                                CameraUpdateFactory.newLatLngBounds(
+                                    bounds,
+                                    resources.displayMetrics.widthPixels,
+                                    resources.displayMetrics.heightPixels,
+                                    300
+                                )
+                            )
+                        }
+
+                        is Result.Error -> {
+                            Log.d("locationError", result.error)
+                        }
+
+                        is Result.Loading -> {}
                     }
-
-                    val bounds: LatLngBounds = boundsBuilder.build()
-                    mMap.animateCamera(
-                        CameraUpdateFactory.newLatLngBounds(
-                            bounds,
-                            resources.displayMetrics.widthPixels,
-                            resources.displayMetrics.heightPixels,
-                            300
-                        )
-                    )
                 }
-
-                is Result.Error -> {
-                    Log.d("locationError", result.error)
-                }
-
-                is Result.Loading -> {}
             }
         }
     }

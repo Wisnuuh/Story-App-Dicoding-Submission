@@ -3,8 +3,14 @@ package com.dicoding.storyapp.data
 import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.liveData
+import androidx.paging.ExperimentalPagingApi
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
+import androidx.paging.liveData
 import com.dicoding.storyapp.data.pref.UserModel
 import com.dicoding.storyapp.data.pref.UserPreferences
+import com.dicoding.storyapp.data.database.StoryDatabase
 import com.dicoding.storyapp.data.response.AddNewStoryResponse
 import com.dicoding.storyapp.data.response.ErrorResponse
 import com.dicoding.storyapp.data.response.ListStoryItem
@@ -21,7 +27,8 @@ import okhttp3.RequestBody
 
 class UserRepository private constructor(
     private val apiService: ApiService,
-    private val userPreferences: UserPreferences
+    private val userPreferences: UserPreferences,
+    private val quoteDatabase: StoryDatabase
 ){
 
     suspend fun saveSession(user: UserModel) {
@@ -83,10 +90,10 @@ class UserRepository private constructor(
         }
     }
 
-    fun getLocations(): LiveData<Result<List<ListStoryItem>>> = liveData {
+    fun getLocations(token: String): LiveData<Result<List<ListStoryItem>>> = liveData {
         emit(Result.Loading)
         try {
-            val response = apiService.getStoriesWithLocation()
+            val response = ApiConfig.getApiService(token).getStoriesWithLocation()
             emit(Result.Success(response.listStory))
         } catch (e: HttpException) {
             Log.d("getLocationException", e.message.toString())
@@ -97,15 +104,29 @@ class UserRepository private constructor(
         }
     }
 
+    fun getStories(): LiveData<PagingData<ListStoryItem>> {
+        @OptIn(ExperimentalPagingApi::class)
+        return Pager(
+            config = PagingConfig(
+                pageSize = 5
+            ),
+            remoteMediator = StoryRemoteMediator(quoteDatabase, apiService),
+            pagingSourceFactory = {
+                quoteDatabase.quoteDao().getAllQuote()
+            }
+        ).liveData
+    }
+
     companion object{
         @Volatile
         private var instance: UserRepository? = null
         fun getInstance(
             apiService: ApiService,
-            userPreferences: UserPreferences
+            userPreferences: UserPreferences,
+            quoteDatabase: StoryDatabase
         ): UserRepository {
             return instance ?: synchronized(this) {
-                instance ?: UserRepository(apiService, userPreferences)
+                instance ?: UserRepository(apiService, userPreferences, quoteDatabase)
             }.also { instance = it }
         }
     }

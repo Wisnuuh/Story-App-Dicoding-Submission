@@ -56,7 +56,6 @@ class SignupActivity : AppCompatActivity() {
                     helperError.isPasswordVisibilityToggleEnabled  = true
                 } else {
                     customBtn.isEnabled = false
-                    helperError.helperText = "Password tidak boleh kurang dari 8 karakter"
                     helperError.isErrorEnabled = true
                     helperError.isPasswordVisibilityToggleEnabled  = false
                 }

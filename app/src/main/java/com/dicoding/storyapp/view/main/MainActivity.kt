@@ -4,19 +4,16 @@ import android.content.Intent
 import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
-import android.view.View
 import android.view.WindowInsets
 import android.view.WindowManager
-import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.dicoding.storyapp.LoadingStateAdapter
 import com.dicoding.storyapp.R
-import com.dicoding.storyapp.data.response.Result
 import com.dicoding.storyapp.databinding.ActivityMainBinding
 import com.dicoding.storyapp.view.maps.MapsActivity
 import com.dicoding.storyapp.view.ViewModelFactory
@@ -37,6 +34,11 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        val layoutManager = LinearLayoutManager(this)
+        binding.rvStories.layoutManager = layoutManager
+        val itemDecoration = DividerItemDecoration(this, layoutManager.orientation)
+        binding.rvStories.addItemDecoration(itemDecoration)
+
         viewModel.getSession().observe(this) { user ->
             if(!user.isLogin) {
                 val intent = Intent(this, WelcomeActivity::class.java)
@@ -44,7 +46,7 @@ class MainActivity : AppCompatActivity() {
                 startActivity(intent)
                 finish()
             } else {
-                setupAction(user.token)
+                setupAction()
             }
         }
 
@@ -52,11 +54,6 @@ class MainActivity : AppCompatActivity() {
             val intent = Intent(this, AddStoryActivity::class.java)
             startActivity(intent)
         }
-
-        val layoutManager = LinearLayoutManager(this)
-        binding.rvStories.layoutManager = layoutManager
-        val itemDecoration = DividerItemDecoration(this, layoutManager.orientation)
-        binding.rvStories.addItemDecoration(itemDecoration)
 
         setupView()
     }
@@ -73,28 +70,17 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun setupAction(token: String) {
+    private fun setupAction() {
         lifecycleScope.launch {
-            viewModel.getStories(token).observe(this@MainActivity) { story ->
-                when (story) {
-                    is Result.Error -> {
-                        binding.progressBar.visibility = View.INVISIBLE
-                        val error = story.error
-                        Toast.makeText(this@MainActivity, error, Toast.LENGTH_SHORT).show()
-                        Log.d("storyError", story.error)
-                    }
-
-                    is Result.Loading -> {
-                        binding.progressBar.visibility = View.VISIBLE
-                    }
-
-                    is Result.Success -> {
-                        binding.progressBar.visibility = View.INVISIBLE
-                        val adapter = StoryAdapter()
-                        adapter.submitList(story.data)
-                        binding.rvStories.adapter = adapter
-                    }
+            val adapter = StoryAdapter()
+            binding.rvStories.adapter = adapter.withLoadStateFooter(
+                footer = LoadingStateAdapter {
+                    adapter.retry()
                 }
+            )
+
+            viewModel.quote.observe(this@MainActivity) {
+                adapter.submitData(lifecycle, it)
             }
         }
     }

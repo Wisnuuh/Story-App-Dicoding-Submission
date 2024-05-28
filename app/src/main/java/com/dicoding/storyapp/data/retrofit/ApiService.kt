@@ -6,7 +6,6 @@ import com.dicoding.storyapp.data.response.LoginResponse
 import com.dicoding.storyapp.data.response.RegisterResponse
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
-import retrofit2.Call
 import retrofit2.http.Field
 import retrofit2.http.FormUrlEncoded
 import retrofit2.http.GET
@@ -31,9 +30,6 @@ interface ApiService {
         @Field("password") password: String
     ): LoginResponse
 
-    @GET("stories")
-    suspend fun getStories(): GetAllStoryResponse
-
     @Multipart
     @POST("stories")
     suspend fun uploadStory(
@@ -44,5 +40,11 @@ interface ApiService {
     @GET("stories")
     suspend fun getStoriesWithLocation(
         @Query("location") location : Int = 1,
+    ): GetAllStoryResponse
+
+    @GET("stories")
+    suspend fun getStoriesPaging(
+        @Query("page") page: Int,
+        @Query("size") size: Int
     ): GetAllStoryResponse
 }
