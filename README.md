@@ -1,1 +1,1 @@
-# Story-App-Dicoding-Submission
+# Story App - Dicoding Android Intermediate Submission
